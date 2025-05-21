@@ -1,6 +1,6 @@
 import React, { FC, useState } from 'react';
 import './App.css';
-import getWaveBlob from './wavBlobUtil';
+import getWaveBlob from './helpers/wavBlobUtils';
 var microOff = require('./resources/micro_off.png');
 var microOn = require('./resources/micro_on.png');
 
@@ -16,7 +16,7 @@ const App : FC = () => {
 
   const onClickMicro = async () =>
   {
-    if (!navigator.mediaDevices?.getUserMedia({audio: true}) && !navigator.mediaDevices) {
+    if (!navigator.mediaDevices?.getUserMedia({audio: true, video: false}) && !navigator.mediaDevices) {
       return console.warn('Not supported')
     }
     if (microImg === microOff)
@@ -27,11 +27,15 @@ const App : FC = () => {
         stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         mediaRecorder = new MediaRecorder(stream);
 
-        mediaRecorder.ondataavailable = async (e) =>
+        mediaRecorder.ondataavailable = (e) =>
         {
           chunks?.push(e.data);
+        }
+        mediaRecorder.onstop = async () =>
+        {
           audioBlob = new Blob(chunks, { type: "audio/webm" });
-          await saveRecord(audioBlob);//await getWaveBlob(audioBlob, false, { sampleRate: 4000})
+          const wavBlob = getWaveBlob(audioBlob, false);
+          await saveRecord(await wavBlob);//await getWaveBlob(audioBlob, false, { sampleRate: 4000})
         }
         mediaRecorder.start();
       }
